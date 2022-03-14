@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+		<title>Apps</title>
+    </head>
+	
+    <body>
+		<div class="container">
+			<h1>Apps</h1>
+			
+			<button id="btnApps">Cargar Apps</button>
+			<button id="btnApp">Carga App</button>
+			<button id="btnBorrarApp">Borra App</button>
+			<button type="button" class="btn btn-primary" id="abreParaInsertar">Nueva App</button>
+			
+			<button type="button" class="btn btn-danger" id="deslogearse-google">Deslogearse de Google</button>
+		  
+			<div id="formulario"></div><br>
+			
+			<table id="tablaApps" class="table"></table>
+			
+			<div id="divApps"></div>
+		</div>  
+       
+        <!---*************** VENTANA MODAL ***************-->
+        <!-- The Modal -->
+		<div class="modal" id="myModal">
+			<div class="modal-dialog">
+				<div class="modal-content">
+
+					<!-- Modal body -->
+					<div class="modal-body">
+						<form action="/subir2" method="POST" enctype="multipart/form-data">
+							<h1>App</h1>
+								<p><input type="text" name="id" id="idApp" hidden></p>
+								<p>Nombre: <input type="text" name="nombre" id="nombre"></p>
+								<p>Categoria: <input type="text" name="categoria" id="categoria"></p>
+								<p>Precio: <input type="text" name="precio" id="precio"></p> 
+								<p><input type="file" name="archivo" id="archivo"></p>
+						</form>
+					</div>
+
+					<!-- Modal footer -->
+					<div class="modal-footer">
+						<button id="btnInsertaApp" class="btn btn-primary" data-dismiss="modal">Inserta App</button>
+						<button id="btnActualizaApp" class="btn btn-primary" data-dismiss="modal">Actualiza App</button>
+						<button type="button" class="btn btn-danger" data-dismiss="modal">Cerrar</button>
+					</div>
+				</div>
+			</div>
+		</div>
+        <!--- *************** FIN DE VENTANA MODAL **************-->
+      <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script> 
+        
+        <script>
+			const cabeceras = new Headers();
+			cabeceras.append("x-token", localStorage.getItem("token"));
+			cabeceras.append('Content-type','application/json; charset=UTF-8');
+
+            document.getElementById("btnApps").addEventListener('click',cargaApps);
+            document.getElementById("btnApp").addEventListener('click',cargaApp);
+            document.getElementById("btnActualizaApp").addEventListener('click',actualizaApp);
+            document.getElementById("btnInsertaApp").addEventListener('click',insertaApp);
+            document.getElementById("btnBorrarApp").addEventListener('click',borraApp);
+            document.getElementById("abreParaInsertar").addEventListener('click',abreParaInsertar);
+
+			let btnInsertaApp=document.getElementById("btnInsertaApp");
+			let btnActualizaApp=document.getElementById("btnActualizaApp");
+           
+			function getAbsolutePath() {
+                var loc = window.location;
+                var pathName = loc.pathname.substring(0, loc.pathname.lastIndexOf('/') + 1);
+                return loc.href.substring(0, loc.href.length - ((loc.pathname + loc.search + loc.hash).length - pathName.length));
+            }
+            
+            document.getElementById('archivo').addEventListener('change', event => {
+				handleImageUpload(event)
+			})
+			
+			let files;
+			const handleImageUpload = event => {
+				files = event.target.files;
+			}
+			function cargaApps(){
+			alert(getAbsolutePath());
+			let tabla=document.getElementById("tablaApps");
+			fetch(getAbsolutePath()+'webresources/generic/apps', {headers: cabeceras})
+            .then(response => {
+                  if(!response.ok){
+                    throw new Error('Error de token')
+                  }else{
+                    return response.json()
+                  }
+            })
+                .then(json => {console.log(json);
+                //bucle para eliminar todas las filas de la tabla
+                while( tabla.firstChild){
+                    tabla.removeChild(tabla.firstChild);
+                }
+                //recorre todos los productos del array de productos
+                for ( i=0;i<json.length;i++){
+						 //document.getElementById("divApps").innerHTML+=json[i].nombre;
+						 let fila=document.createElement("tr");
+						 let celdaId=document.createElement("td");
+						 celdaId.textContent=json[i].id;
+						 let celdaNombre=document.createElement("td");
+						 celdaNombre.textContent=json[i].nombre;
+						 let celdaPrecio=document.createElement("td");
+						 celdaPrecio.textContent=json[i].precio;
+						 
+						 let celdaCategoria=document.createElement("td");
+						 celdaCategoria.textContent=json[i].categoria;
+						 let celdaImagen=document.createElement("td");
+						 celdaImagen.textContent=json[i].imagen;
+						 /*** CELDA BORRAR ****/
+						 let celdaBorrar=document.createElement("td");
+						 let btnBorrar=document.createElement("button");
+						 btnBorrar.setAttribute("onclick","borraAppPorId('"
+								 +json[i].id+"')");
+						 btnBorrar.textContent="Borrar";
+						 celdaBorrar.appendChild(btnBorrar);
+						/*** CELDA ACTUALIZAR ****/
+						 let celdaActualizar=document.createElement("td");
+						 let btnActualizar=document.createElement("button");
+						 btnActualizar.setAttribute("onclick","cargaAppPorId('"
+								 +json[i].id+"')");
+						 btnActualizar.textContent="Actualizar";
+						 celdaActualizar.appendChild(btnActualizar);
+						
+						 fila.appendChild(celdaId);
+						 fila.appendChild(celdaNombre);
+						 fila.appendChild(celdaPrecio);
+						 fila.appendChild(celdaCategoria);
+						 fila.appendChild(celdaImagen);
+						 fila.appendChild(celdaBorrar);
+						 fila.appendChild(celdaActualizar);
+						 
+						 
+						 tabla.appendChild(fila);
+						 
+					 }//fin de for
+					 
+				  }).catch(error=>alert(error));
+			} 
+
+			function cargaApp() {
+				 let idApp=document.getElementById("idApp").value;
+				 cargaAppPorId(idApp);              
+			}
+			 
+			function cargaAppPorId(idApp){
+				 $('#myModal').modal('show');
+
+				 btnInsertaApp.style.display="none";
+				 btnActualizaApp.style.display="inline";
+				 fetch(getAbsolutePath()+'webresources/generic/app/'+idApp,
+				 {headers: cabeceras} )
+					.then(response => {
+					  if(!response.ok){
+						throw new Error('Error de token')
+					  }else{
+						return response.json()
+					  }
+					})
+					.then(json => {
+						console.log(json);
+						document.getElementById("formulario").style.display="block";
+						document.getElementById("idApp").value=json.id;
+						document.getElementById("nombre").value=json.nombre;
+						document.getElementById("categoria").value=json.categoria;
+						document.getElementById("precio").value=json.precio;
+						document.getElementById("archivo").value=json.imagen;
+					})
+					.catch(error=>alert(error));
+         }
+         
+			 function abreParaInsertar(){
+				 $('#myModal').modal('show');
+
+				 btnInsertaApp.style.display="inline";
+				 btnActualizaApp.style.display="none";
+			 }
+			 
+			 function actualizaApp(){
+				  fetch(getAbsolutePath()+'webresources/generic/app/'+document.getElementById("idApp").value, {
+				 method: 'PUT',
+				
+				 body: JSON.stringify({
+				   id: document.getElementById("idApp").value,
+				   nombre: document.getElementById("nombre").value,
+				   categoria: document.getElementById("categoria").value,
+				   precio: document.getElementById("precio").value,
+				   imagen: document.getElementById("archivo").value
+				 }),
+				 headers: cabeceras,
+			   })
+				 .then((response) => response.json())
+				 .then((json) => console.log(json));
+				 cargaApps();
+			 }
+         
+			function insertaApp(){
+				fetch(getAbsolutePath()+'webresources/generic/app/', {
+					method: 'POST',
+					headers:cabeceras,
+					body: JSON.stringify({
+					   nombre: document.getElementById("nombre").value,
+					   categoria: document.getElementById("categoria").value,
+					   precio: document.getElementById("precio").value,
+					   imagen: document.getElementById("archivo").value
+					}),
+					
+				})
+				.then((response) => response.json())
+				.then((json) => console.log(json));
+				cargaApps();
+				$("#myModal").modal("toggle");
+			}
+         
+			function borraApp() {
+            let idApp=document.getElementById("idApp").value;
+				borraAppPorId(idApp);
+				cargaApps();
+			}
+			
+			function borraAppPorId(idApp){
+				fetch(getAbsolutePath()+'webresources/generic/app/'+idApp, {
+					method: 'DELETE',
+					headers: cabeceras
+				});
+				cargaApps();
+			}
+		 
+		    boton = document.getElementById("deslogearse-google");
+				boton.onclick = ()=>{
+				google.accounts.id.disableAutoSelect();
+				google.accounts.id.revoke( localStorage.getItem('token'));
+				localStorage.clear();
+				location.reload();
+			}
+        </script>
+    </body>
+</html>
